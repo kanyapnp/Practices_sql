@@ -83,7 +83,7 @@ ON a.post_id = b.post_id
   AND a.num_likes = 0
   AND b.num_likes > 0;
 
-/* Q2: follow-up
+/* Q3: follow-up
 In real life, data may be noisy or missing. Lets say we had some post_ids that had NULL values in the num_likes column
 
     +--------------+------------+------------+
@@ -121,3 +121,25 @@ ON a.post_id = b.post_id
   AND b.ds = '2014-01-02'
   AND COALESCE(a.num_likes,0) = 0
   AND b.num_likes > 0;
+
+/* Q4: 
+Write a query to check that there is a unique post_id for each ds (i.e. no duplicate post_ids on a given date).
+Return 1 if the test passes; 0 if the test fails.</b>
+
+Example Output:
+    +-------------+-------------+
+    | ds          | test_result |
+    +-------------+-------------+
+    | 2014-01-01  |     1       |
+    | 2014-01-02  |     1       |
+    +-------------+-------------+
+*/
+
+SELECT 
+  ds, 
+  CASE WHEN count(*) = count(disintct post_id)
+  THEN 1
+  ELSE 0
+  END AS test_result
+FROM post_likes
+GROUP BY 1
