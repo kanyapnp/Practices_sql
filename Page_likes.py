@@ -26,7 +26,7 @@ post_likes
 +--------------+------------+-------------
 */
 
-/*
+/* Q1:
 Write a query to return the dates that have > 20 likes.
 
 Example Output:
@@ -42,7 +42,7 @@ FROM post_likes
 GROUP BY 1
 HAVING SUM(num_likes) > 20
 
-/* 
+/* Q2:
 Write a single query to get the count of the following for a ds
 * total number of posts
 * total number of posts with > 0 likes
@@ -60,3 +60,24 @@ SELECT ds, COUNT(distinct post_id) AS cnt_posts,
 SUM(CASE WHEN num_likes > 0 THEN 1 ELSE 0 END) AS cnt_posts_likes
 FROM post_likes
 group by 1
+
+/* Q3:
+Write a query to select the post_ids that had 0 likes on 2014-01-01 and > 0 likes on 2014-01-02.
+E.g. it would return the post_id of 103.</b>
+*/
+SELECT post_id
+FROM(
+SELECT post_id,
+CASE WHEN ds='2014-01-01' AND num_likes = 0 THEN 1 ELSE 0 END AS f_1,
+CASE WHEN ds='2014-01-02' AND num_likes > 0 THEN 1 ELSE 0 END AS f_2
+FROM post_likes) tmp
+WHERE tmp.f_1 = 1 AND tmp.f_2 = 1
+
+SELECT a.post_id
+FROM post_likes a
+JOIN post_likes b
+ON a.post_id = b.post_id
+  AND a.ds = '2014-01-01'
+  AND b.ds = '2014-01-02'
+  AND a.num_likes = 0
+  AND b.num_likes > 0;
