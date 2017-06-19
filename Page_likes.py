@@ -143,3 +143,27 @@ SELECT
   END AS test_result
 FROM post_likes
 GROUP BY 1
+
+/* Q4: Follow-up
+Modify the query to rollup across all dates. 
+E.g. Return 1 if all tests pass on all dates; 0 if any test fails on any of the dates.</b>
+
+Example Output:
+    +---------------------+
+    | overall_test_result |
+    +---------------------+
+    |          1          |
+    +---------------------+
+*/
+
+SELECT IF (SUM(sub.test_result) = COUNT(distinct sub.ds), 1, 0) AS overall_test_result
+FROM (
+SELECT 
+  ds, 
+  CASE WHEN count(*) = count(disintct post_id)
+  THEN 1
+  ELSE 0
+  END AS test_result
+FROM post_likes
+GROUP BY 1
+) sub
