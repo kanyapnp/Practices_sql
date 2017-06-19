@@ -70,7 +70,8 @@ FROM(
 SELECT post_id,
 CASE WHEN ds='2014-01-01' AND num_likes = 0 THEN 1 ELSE 0 END AS f_1,
 CASE WHEN ds='2014-01-02' AND num_likes > 0 THEN 1 ELSE 0 END AS f_2
-FROM post_likes) tmp
+FROM post_likes
+WHERE ds BETWEEN '2014-01-01' AND '2014-01-02') tmp
 WHERE tmp.f_1 = 1 AND tmp.f_2 = 1
 
 SELECT a.post_id
@@ -80,4 +81,43 @@ ON a.post_id = b.post_id
   AND a.ds = '2014-01-01'
   AND b.ds = '2014-01-02'
   AND a.num_likes = 0
+  AND b.num_likes > 0;
+
+/* Q2: follow-up
+In real life, data may be noisy or missing. Lets say we had some post_ids that had NULL values in the num_likes column
+
+    +--------------+------------+------------+
+    | ds           | post_id    | num_likes  |
+    +--------------+------------+------------+
+    | 2014-01-01   | 101        | 2          |
+    | 2014-01-01   | 102        | 7          |
+    | 2014-01-01   | 103        | 0          |
+    | 2014-01-01   | 104        | 9          |
+    | 2014-01-01   | 105        | NULL       |    <-- new row
+    | 2014-01-02   | 102        | 11         |
+    | 2014-01-02   | 103        | 2          |
+    | 2014-01-02   | 104        | 1          |
+    | 2014-01-02   | 105        | 7          |
+    +--------------+------------+-------------
+
+
+We want to treat these NULL values as zero. Modify the query to take this into account so that we return the post_ids of 103 & 105:</i>
+*/
+
+SELECT post_id
+FROM(
+SELECT post_id,
+CASE WHEN ds='2014-01-01' AND COALESCE(num_likes, 0)= 0 THEN 1 ELSE 0 END AS f_1,
+CASE WHEN ds='2014-01-02' AND num_likes > 0 THEN 1 ELSE 0 END AS f_2
+FROM post_likes
+WHERE ds BETWEEN '2014-01-01' AND '2014-01-02') tmp
+WHERE tmp.f_1 = 1 AND tmp.f_2 = 1
+
+SELECT a.post_id
+FROM post_likes a
+JOIN post_likes b
+ON a.post_id = b.post_id
+  AND a.ds = '2014-01-01'
+  AND b.ds = '2014-01-02'
+  AND COALESCE(a.num_likes,0) = 0
   AND b.num_likes > 0;
