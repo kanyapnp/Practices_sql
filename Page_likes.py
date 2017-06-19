@@ -41,3 +41,22 @@ SELECT ds, SUM(num_likes)
 FROM post_likes
 GROUP BY 1
 HAVING SUM(num_likes) > 20
+
+/* 
+Write a single query to get the count of the following for a ds
+* total number of posts
+* total number of posts with > 0 likes
+
+Example Output:
+    +-------------+-----------+-----------------+
+    | ds          | cnt_posts | cnt_posts_likes |
+    +-------------+-----------+-----------------+
+    | 2014-01-01  |     4     |       3         |
+    | 2014-01-02  |     4     |       4         |
+    +-------------+-----------+-----------------+
+*/
+
+SELECT ds, COUNT(distinct post_id) AS cnt_posts,
+SUM(CASE WHEN num_likes > 0 THEN 1 ELSE 0 END) AS cnt_posts_likes
+FROM post_likes
+group by 1
