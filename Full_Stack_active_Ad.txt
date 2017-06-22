@@ -1,0 +1,202 @@
+Full Stack Interview: How long each day is an ad active for? 
+
+There will be 4 sections to this problem: Visualization, Data Modeling, Coding, and SQL.
+
+EXPLANATION (6 mins) 
+The data model for Facebook ads can be summarized as follows: SQL_1.png
+
+An account can contain many campaigns and a campaign can contain many ads. But each ad can only belong to one campaign and each campaign can only belong to one account.
+Each object has an id and state that determines if the object is active (1) or inactive (0). The advertiser has full control to pause or unpause each of these objects independently. However, an ad is not 'globally active' unless all levels are active.
+In the example below, the ad is globally active for 26400 sec our of 86400 sec. That's 30.5% of the day.
+
+SQL_2.png
+
+question we're interested in is: What is the time distribution that ads spend in a 'globally active' state?
+
+VISUALIZATION (6 mins) 
+
+Design a simple visualization that would be capable of exploring the time distributions of 'globally active' ads.
+
+NOTE: (this is framed deliberately as an open ended problem to encourage the candidate to ask questions and express their design creativity. We're looking for them to recognize that we can get a daily snapshot as well as a historical trend of the data, and hopefully express the idea of filtering based on some dimension, e.g. country).
+
+
+DAILY SNAPSHOT: A histogram with the x axis being between 1 and 24 indicating the number of hours spent in an active state and the y axis being the number of ads). Possibly have a dropdown box to break down by some dimensions, e.g. country, ad_budget_buckets (to separate the small and big spenders).
+
+
+HISTORICAL TREND: A line chart with the x axis being the date, y axis being the number of ads, and up to 24 lines (24 checkboxes as filters) to plot the number of 'globally active' ads for a certain number of hours. The breakdowns can apply to both the daily snapshot and the historical trend.
+
+DATA MODELING (10 mins) 
+
+To realize this visualization, we need a good data model. We also want to start thinking of the logic required to produce the data in the visualization. During discussions with engineers and product managers, we learn some additional information.
+
+There is a table called state_change_log which contains the state changes associated with each ad_id each day.
+There is another table called ad_details which contains all ad_ids and their advertiser country.
+Design the remaining tables and schema that would allow us to realize the visualization (below represents just one possible way to design the schema).
+
+ -------------------------------------------------
+ | state_change_log                              |   THIS IS A PROVIDED TABLE
+ -------------------------------------------------
+ | ds STRING                                     |   Datestamp (e.g. '2015-01-01')
+ | ad_id BIGINT                                  |   Ad ID (primary key)
+ | changes_today ARRAY<MAP<STRING,STRING,INT>>   |   Array of change-tuples (level, action, timestamp) associated with the ad_id that day.
+ -------------------------------------------------
+level describes the change level ('AD', 'CAMPAIGN', 'ACCOUNT')
+action describes the state change ('PAUSED', 'UNPAUSED')
+ts is the timestamp (sec) during the day that the state change was made (0 for 00:00:00, 86399 for 23:59:59)
+ ---------------------------
+ | ad_details              |   THIS IS A PROVIDED TABLE
+ ---------------------------
+ | ad_id BIGINT            |   Ad ID (primary key)
+ | adv_country STRING      |   The country of the advertiser for this ad_id
+ ---------------------------
+ ---------------------------------------   -- STEP 1: compute active time spent for each ad_id
+ | ad_active_duration                  |
+ ---------------------------------------
+ | ds STRING                           |
+ | ad_id BIGINT                        |
+ | country STRING                      |
+ | globally_active_time_spent_sec INT  |
+ | state_at_end_of_day ARRAY<INT>      |
+ ---------------------------------------
+ -----------------------------------    -- STEP 2: roll up results for dashboard
+ | ad_active_duration_dashboard    |    -- may also choose to collapse this into just active_hours_bucket STRING and num_ads INT
+ -----------------------------------
+ | ds STRING                       |
+ | country STRING                  |
+ | num_ads_active_0_1_hours INT    |
+ | num_ads_active_1_2_hours INT    |
+ | num_ads_active_2_3_hours INT    |
+ | num_ads_active_3_4_hours INT    |
+ | ...                             |
+ | num_ads_active_23_24_hours INT  |
+ -----------------------------------
+
+[edit]CODING (20 mins) 
+
+Now that we have a data model, we could write some SQL to populate these two tables. However, computing the 'globally active' duration for each ad_id will be difficult and expensive if we were to only use only SQL. Instead, it is preferable to write a UDF to perform the core calculation. The problem becomes this:
+
+Given an array of tuples that represent advertiser changes (level, action, timestamp), write a function that returns two things:
+
+the time spent in a globally active state for each ad_id (sec)
+the ad/campaign/account state at the end of the day
+
+A good starting point will be to ask what inputs are needed?
+
+the ad/campaign/account state at the start of the day (i.e. initial conditions)
+changes_today: array of change tuples (timestamp, level, action) associated with ad_id
+
+A good next step would be to discuss the algorithm and possible issues before implementing.
+
+Is the array of change tuples ordered by timestamp? Hopefully they ask this. We assume it is.
+What if there are no state changes for an ad_id (then the changes_today input will be NULL):
+ ad_global_state_start = 0: 0 globally active seconds and will end the day as ad_global_state_start = 0.
+ ad_global_state_start = 1: 86400 globally active seconds and will end the day as ad_global_state_start = 1.
+
+def get_globally_active_time(state_at_start_of_day, changes_today):
+    state = state_at_start_of_day
+    glob_time = 0
+    last_event_time = 0
+
+    # edge case: no changes made on any levels
+    if len(changes_today) == 0:
+        if sum(state) == 3: return 86400                # 86400 sec in a day
+        else: return 0
+
+    # deal with each tuple individually
+    for t in changes_today:
+        print glob_time
+        level = t[0]
+        action = t[1]
+        action_time = t[2]
+
+        # error checking
+        if action_time < 0 or action_time > 86400:
+            return -1
+
+        # if all levels are active, then count the duration as globally active
+        if sum(state) == 3:
+            glob_time = glob_time + (action_time - last_event_time)
+
+        # set new states and last_event_time
+        if level == 'AD' and action == 'PAUSE':
+            state[0] = 0
+        elif level == 'AD' and action == 'UNPAUSE':
+            state[0] = 1
+        elif level == 'CAMPAIGN' and action == 'PAUSE':
+            state[1] = 0
+        elif level == 'CAMPAIGN' and action == 'UNPAUSE':
+            state[1] = 1
+        elif level == 'ACCOUNT' and action == 'PAUSE':
+            state[2] = 0
+        elif level == 'ACCOUNT' and action == 'UNPAUSE':
+            state[2] = 1
+        else: return -1
+
+        last_event_time = action_time
+
+    # after cycling through all the tuples, we hold the last state constant for the rest of the day
+    if sum(state) == 3:
+        glob_time = glob_time + (86400 - last_event_time)             # 86400 sec in a day
+
+    return [glob_time, state]
+
+Example execution:
+
+changes_today = [
+    ('AD', 'PAUSE', 10000),
+    ('CAMPAIGN', 'PAUSE', 25000),
+    ('AD', 'UNPAUSE', 35000),
+    ('CAMPAIGN', 'UNPAUSE', 50000),
+    ('ACCOUNT', 'PAUSE', 60000),
+    ('ACCOUNT', 'UNPAUSE', 80000)]
+state_at_start_of_day = [1, 1, 1]   # [initial_ad, initial_campaign, initial_account]
+
+get_globally_active_time(state_at_start_of_day, changes_today)            # should return [26400, [1, 1, 1]]
+
+Some test cases to consider:
+
+Active time (sec) must be a number between 0 and 86400 (24*60*60)
+What about day light savings? (e.g. a day may have 25 hours)
+
+[edit]SQL (18 mins) 
+
+With the UDF, we can now proceed to write the SQL using the UDF to produce the tables we defined in our data model.
+
+
+ad_active_duration
+
+SELECT
+    X.ad_id,
+    X.adv_country,
+    get_globally_active_time(Z.state_at_end_of_day, Y.changes_today)[0] AS globally_active_time_spent_sec,
+    get_globally_active_time(Z.state_at_end_of_day, Y.changes_today)[1] AS state_at_end_of_day
+FROM ad_details X
+LEFT OUTER JOIN state_change_log Y
+ON X.ad_id = Y.ad_id
+LEFT OUTER JOIN ad_active_duration Z
+ON Z.ds = '<DATEID-1>'                    # state_at_end_of_day YESTERDAY = state_at_start_of_day TODAY
+    AND X.ad_id = Z.ad_id
+
+Question: what if there are no state changes for an ad_id? Because we're doing a left outer join, Y.changes_today would be NULL. Are NULL inputs taken care of in COMPUTE_GLOBALLY_ACTIVE_DURATION()? If there are no changes associated with an ad_id, then it ends the day in the same state it began in.
+
+ I.e. if the ad_id began the day as not globally active, then, it will have 0 globally active seconds and will end the day as not globally active.
+ I.e. if the ad_id began the day as globally active, then, it will have 86400 globally active seconds and will end the day as globally active.
+
+Question: We always need the previous day of ad_active_duration to compute the current day of ad_active_duration. How to compute the very first day of ad_active_duration? This is out of the scope of this question but in general, a separate query will have to be kick-started manually to get data for the 'first' day.
+
+
+
+ad_active_duration_dashboard
+
+SELECT
+    ds,
+    adv_country,
+    SUM(IF(active_time_spent_sec = 0), 1, 0) AS num_ads_active_0_hours,
+    SUM(IF(active_time_spent_sec > 0*60*60 AND active_time_spent_sec <= 1*60*60), 1, 0) AS num_ads_active_0_1_hours,
+    SUM(IF(active_time_spent_sec > 1*60*60 AND active_time_spent_sec <= 2*60*60), 1, 0) AS num_ads_active_1_2_hours,
+    SUM(IF(active_time_spent_sec > 2*60*60 AND active_time_spent_sec <= 3*60*60), 1, 0) AS num_ads_active_2_3_hours,
+    ...
+    SUM(IF(active_time_spent_sec > 23*60*60 0 AND active_time_spent_sec <= 24*60*60), 1, 0) AS num_ads_active_23_24_hours
+FROM ad_active_duration
+WHERE ds = '<DATEID>'
+GROUP BY adv_country;
