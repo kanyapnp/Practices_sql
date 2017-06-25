@@ -57,3 +57,8 @@ SELECT dateid,
 SUM(CASE WHEN fruit = 'Apple' THEN sold WHEN fruit = 'Orange' THEN -sold END) AS diff
 FROM fct_sales
 group by 1
+
+/*Follow Up - Do this with only one table scan, what if there are more fruit, 
+what if we have no row when apples or oranges is 0 on a day*/
+
+Answer: These follow ups shoud be well covered in the above query....
