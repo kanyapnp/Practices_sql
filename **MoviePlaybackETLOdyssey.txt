@@ -41,6 +41,17 @@ Filter the source data to include only the records that fall within our target d
 The mapper stage will distribute the data by (userid, movieid) and sort the data by (userid, movieid, pb_start_pos)
 All the playback_segments for a given (userid, movieid) will be sent to the same reducer and will be sorted in order of increasing pb_start_pos.  
 Write a reducer program that reduces for a (userid, movied)  all of the sorted (pb_start_pos, pb_end_pos) tuples, and emits a single value total_viewed_secs. Here, the candidate should be able to write some Python or pseudo-code to implement a reducer algorithm.  Reduce a list of tuples (these are intervals, really) [(pb_start_pos_0, pb_end_pos_0), (pb_start_pos_1, pb_end_pos_1), ...., (pb_start_pos_N, pb_end_pos_N)] to a single value total_viewed_secs The output of our map-reduce is loaded into a date partition in user_movie_views = (userid, movieid, total_viewed_secs, date)
+
+*** Thoughts for the reduce job: 
+total = 0
+last_start = 0
+last_end = 0
+For item in list:
+  if item[0] >= last_start AND item[1] > last_end:
+    total = total + (item[1] - last_end)
+    last_start = item[0]
+    last_end = item[1]
+
 [edit]Summary SQL Query
 
 Our MapReduce job has transformed the Big Data in playback_segments, and loaded Still Pretty Big Data at the (userid, movieid, date) level - assuming our streaming movie service is successful and has millions of daily users.  Now we need to further transform this data to load a summary table, along the lines of category_movie_rank = (category, movie_name, rank, date). This could be done by writing a Hive, Presto, Vertica, or some other sort of SQL query that will run in a scalable way against a large data set.  Things the candidate needs to take care of:
