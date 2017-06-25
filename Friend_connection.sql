@@ -61,16 +61,16 @@ Q1: What percent of friend requests are accepted?
 
 SELECT 
   CASE
-    WHEN fc.req_accpted = 0 
+    WHEN fr.req_sent = 0 
     THEN 0 
-    ELSE CAST(fr.req_sent AS DOUBLE)/CAST(fc.req_accepted AS DOUBLE)
+    ELSE CAST(fc.req_accepted AS DOUBLE)/CAST(fr.req_sent AS DOUBLE)
   END AS accepted_rate
 FROM 
 (SELECT count(distinct sender_uid, recipient_uid) as req_sent
   FROM fct_request) fr
 JOIN 
 (SELECT count(distinct accepter_id, sender_uid) as req_accepted 
-  FROM fct_acceptance) fc
+  FROM fct_accept) fc
 
 
 /*
@@ -85,3 +85,37 @@ FROM fct_accept) consolidated
 group by 1
 order by count(dinstinct friend_2) DESC
 limit 1
+
+/*Follow Up - What is the average days from receiving a request to accepting it per user, 
+(ignoring requests that haven't been accepted)? What is the percentage of accepted requests per user?*/
+
+Follow up 1:
+fct_request: date_id, sender_uid, recipient_uid
+fct_accept: date_id, accepter_uid, sender_uid
+
+SELECT fr.recipient_uid, AVG(DATE_DIFF('day', fa.date_id, fr.date_id)) AS avg_accept_days
+fct_request fr
+JOIN 
+fct_accept fa
+ON fr.sender_uid = fa.sender_uid
+AND fr.recipient_uid = fa.accepter_uid
+GROUP BY 1
+
+Follow up 2:
+SELECT 
+  fr.recipient_uid, 
+  CASE 
+    WHEN fr.received = 0
+    THEN 0
+    ELSE CAST(fa.accpted AS DOUBLE)/CAST(fr.received AS DOUBLE)
+    END AS rate
+FROM
+(SELECT recipient_uid, count(distinct sender_uid) AS received
+FROM fct_request 
+GROUP BY 1) fr
+JOIN
+(SELECT accepter_uid, count(distinct sender_uid) AS accepted
+FROM fct_accept
+GROUP BY 1) fa
+ON fr.recipient_uid = fa.accepter_uid
+GROUP BY 1
