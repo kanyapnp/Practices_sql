@@ -12,4 +12,4 @@ uid, login_ts
 https://jaxenter.com/10-sql-tricks-that-you-didnt-think-were-possible-125934.html
 Problem 4
 
-SELECT uid, row_number() over (order by CAST(log_ts AS DATE)) AS login_date
+# SELECT uid, row_number() over (order by CAST(log_ts AS DATE)) AS login_date
