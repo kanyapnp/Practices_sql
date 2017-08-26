@@ -9,6 +9,7 @@ The Question #1 above requires a cross join with Accounts and Dates and lead to 
 How could you optimize this from a design perspective? => Answer could be datelist, bitmap integer etc.
 
 SELECT temp.date_id, temp.account_id
+from
 (SELECT a.account_id, d.date
 from account a
 CROSS JOIN date d
