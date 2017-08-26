@@ -1,6 +1,8 @@
-create table #t (Id int, Name char)
+-- https://stackoverflow.com/questions/36927685/count-number-of-consecutive-occurrence-of-values-in-table
 
-insert into #t values
+create table t (Id int, Name char)
+
+insert into t values
 (1, 'A'),
 (2, 'A'),
 (3, 'B'),
