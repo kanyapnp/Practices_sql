@@ -13,3 +13,6 @@ https://jaxenter.com/10-sql-tricks-that-you-didnt-think-were-possible-125934.htm
 Problem 4
 
 # SELECT uid, row_number() over (order by CAST(log_ts AS DATE)) AS login_date
+
+Good reference 3:
+https://blog.jooq.org/2015/11/07/how-to-find-the-longest-consecutive-series-of-events-in-sql/
