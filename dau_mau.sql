@@ -22,7 +22,7 @@ Example Output:
    
 SELECT date, 
 count(distinct CASE WHEN date = '2015-01-01' THEN uid ELSE NULL END) AS dau,
-COUNT(distinct CASE WHEN date > '2014-12-01' and date <= '2015-01-31' THEN uid ELSE NULL END) AS mau
+COUNT(distinct CASE WHEN date > '2014-12-01' and date <= '2015-01-01' THEN uid ELSE NULL END) AS mau
 FROM actions
 WHERE date > '2014-12-01' and date <= '2015-01-01'
 GROUP BY 1
