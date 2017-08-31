@@ -45,6 +45,12 @@ group by 1) c_a
 on w.continent = c_a.continent
 and area = c_a.ma
 
+/* select continent, name
+from (
+select continent, name, rank() over (partition by continent order by name) as r
+from world) t
+where t.r = 1 */
+
 select continent, name
 from world x
 where name <= all
