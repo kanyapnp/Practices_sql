@@ -128,3 +128,15 @@ where population >= ALL(
 select population * 3 from world y where x.continent = y.continent
 and population > 0 AND y.name != x.name
 )
+
+-- Quiz
+/*
+shows the name, region and population of the smallest country in each region
+*/
+
+SELECT name, region, population
+from world x
+where population <= (select population from world y where x.region = y.region and y.population > 0)
+               
+               
+               
