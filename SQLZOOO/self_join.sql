@@ -108,3 +108,35 @@ JOIN stops stopd ON (d.stop = stopd.id)
 WHERE  stopa.name = 'Craiglockhart' AND stopd.name = 'Sighthill'
             AND  stopb.name = stopc.name
 ORDER BY LENGTH(a.num), b.num, stopb.id, LENGTH(c.num), d.num
+
+select to_stop.num, to_stop.company, to_stop.name, from_stop.num, from_stop.company
+from 
+(select stopb.name,  a.company, a.num
+from route a
+join route b
+on a.company = b.company
+and a.num = b.num
+join stops stopa
+on a.stop = stopa.id
+join stops stopb
+on b.stop = stopb.id
+where stopa.name = 'Craiglockhart') to_stop 
+join 
+(select stopa.name, b.company, b.num
+from route a
+join route b
+on a.company = b.company
+and a.num = b.num
+join stops stopa
+on a.stop = stopa.id
+join stops stopb
+on b.stop = stopb.id
+where stopb.name = 'Sighthill') from_stop
+on to_stop.name = from_stop.name
+and
+(case when to_stop.company = from_stop.company
+THEN to_stop.num <> from_stop.num
+ELSE 1 = 1
+END)
+group by 1,2,3,4,5
+order by LENGTH(to_stop.num), to_stop.num, to_stop.name, LENGTH(from_stop.num), from_stop.num
