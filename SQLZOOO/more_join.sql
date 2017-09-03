@@ -163,3 +163,41 @@ join actor
 on casting.actorid = actor.id
 where name = 'Art Garfunkel')
 and actor.name <> 'Art Garfunkel'
+
+
+/* 
+Select the statement which lists the unfortunate directors of the movies which have caused financial loses (gross < budget)
+*/
+select name
+from actor
+where actor.id in (
+select director
+from movie
+where gross < budget
+)
+
+/*
+Select the statement that shows the list of actors called 'John' by order of number of movies in which they acted
+*/
+select name
+from casting
+join actor
+on casting.actorid = actor.id
+where name like 'John %'
+group by name
+order by count(movieid) DESC
+
+/*
+Select the statement that lists all the actors that starred in movies directed by Ridley Scott who has id 351
+*/
+select name
+from movie
+join casting
+on movie.id = casting.movieid
+join actor
+on actor.id = casting.actorid
+where director = ( 
+select id
+from actor
+where name = 'Ridley Scott')
+and ord = 1
