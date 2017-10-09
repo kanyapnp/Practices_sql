@@ -1,0 +1,2 @@
+A very good websites for SQL questions.
+http://www.programmerinterview.com/index.php/database-sql/what-is-an-index/
