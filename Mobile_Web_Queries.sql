@@ -91,14 +91,14 @@ Question 4: An analyst comes to us and says that he suspects that longer queries
 SELECT count(distinct uid)
 FROM 
 
-(SELECT uid, query, result
+(SELECT uid
 FROM daily_mobile_query_log
 WHERE result IS NULL 
 AND len(query) > 10
 
 UNION ALL
 
-SELECT uid, query, result
+SELECT uid
 FROM daily_web_query_log
 WHERE result IS NULL 
 AND len(query) > 10 ) c
