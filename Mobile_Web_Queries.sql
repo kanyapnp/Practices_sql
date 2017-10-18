@@ -61,14 +61,18 @@ LIMIT 1;
 Question 3: Write a query to get the breakdown of successful/unsuccessful queries by country and gender.
 
 SELECT ut.country, ut.gender, 
-CASE 
-WHEN  t1.result = 1
-THEN 'successful'
-WHEN t1.result IS NULL
-THEN 'unsucessful'
-ELSE 'unknow'
-END AS q_status,
-COUNT(*)
+SUM(
+  CASE 
+  WHEN t1.result = 1
+  THEN 1
+  ELSE 0
+  END) AS count_successful,
+SUM(
+  CASE
+  WHEN t1.result is NULL
+  THEN 1
+  ELSE 0
+  END) AS count_unsuccessful
 FROM 
 (
 SELECT uid, result
@@ -80,6 +84,7 @@ SELECT uid, result
 FROM daily_web_query_log) t1
 LEFT OUTER JOIN user_table ut
 ON t1.uid = ut.uid
+GROUP BY 1,2
 
 Question 4: An analyst comes to us and says that he suspects that longer queries (more than 10 characters) are less successful. Hopefully they will be able to derive the right question. HINT: Write a SQL that tells us the number of users who have had unsuccessful queries larger than 10 characters?
 
