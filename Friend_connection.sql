@@ -94,6 +94,7 @@ fct_request: date_id, sender_uid, recipient_uid
 fct_accept: date_id, accepter_uid, sender_uid
 
 SELECT fr.recipient_uid, AVG(DATE_DIFF('day', fa.date_id, fr.date_id)) AS avg_accept_days
+FROM
 fct_request fr
 JOIN 
 fct_accept fa
